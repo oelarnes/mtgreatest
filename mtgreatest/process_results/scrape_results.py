@@ -1,5 +1,5 @@
 import requests
-import mtgreatest.utils
+import mtgreatest.utils as utils
 
 from mtgreatest.sql.mtgdb import Cursor
 from bs4 import BeautifulSoup
