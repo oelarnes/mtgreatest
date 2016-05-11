@@ -1,7 +1,7 @@
 import requests
-import mtgstats.utils
+import mtgreatest.utils
 
-from mtgstats.sql.mtgdb import Cursor
+from mtgreatest.sql.mtgdb import Cursor
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country

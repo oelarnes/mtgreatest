@@ -1,3 +1,6 @@
 *.pyc
 db_params.py
 setup.py
+build
+dist
+mtgreatest.egg-info

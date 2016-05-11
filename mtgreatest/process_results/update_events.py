@@ -1,7 +1,7 @@
 import requests
 
 from bs4 import BeautifulSoup
-from mtgstats.sql.mtgdb import Cursor
+from mtgreatest.sql.mtgdb import Cursor
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
