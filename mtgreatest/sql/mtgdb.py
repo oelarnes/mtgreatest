@@ -5,9 +5,11 @@ from datetime import datetime
 def connect():
     return MySQLdb.connect(user=params['user'],passwd=params['passwd'],db=params['db'])
 
-def serialize(el):
+def serialize(el, _type):
     if type(el) is unicode:
         el = el.encode('utf-8')
+    if _type.startswith('int'):
+        return re.match('^[0-9]*', el).group()
     if type(el) is str:
         return "'{}'".format(el.replace("'", "\\'"))
     if el == None:
@@ -19,7 +21,7 @@ def serialize(el):
 def names_from_data_table(data_table):
     return list(set().union(*[row.keys() for row in data_table]))
 
-def insert_statement(table_name, data_table):
+def insert_statement(table_name, data_table, types):
     statement = 'INSERT INTO {} '.format(table_name)
     if not len(data_table):
         statement += '() VALUES ()'
@@ -30,7 +32,7 @@ def insert_statement(table_name, data_table):
 
     values = []
     for row in data_table:
-        content = str.join(',', [serialize(row.get(name, None)) for name in names])
+        content = str.join(',', [serialize(row.get(name, None), types[name]) for name in names])
         values.append('({})'.format(content))
 
     statement += str.join(',', values)
@@ -42,7 +44,8 @@ class Cursor:
         self.__cursor = self.__db.cursor()
     
     def insert(self, table_name, data_table):
-        statement = insert_statement(table_name, data_table)
+        types = self.get_types(table_name)
+        statement = insert_statement(table_name, data_table, types)
         self.execute(statement)
         return self
 
@@ -56,3 +59,7 @@ class Cursor:
             self.__db.commit()
         self.__cursor.close()
         self.__db.close()
+
+    def get_types(self, data_table):
+        types = self.execute("select column_name, data_type from information_schema.columns where table_name = '{}'".format(table_name);
+
