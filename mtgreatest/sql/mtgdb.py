@@ -61,5 +61,7 @@ class Cursor:
         self.__db.close()
 
     def get_types(self, data_table):
-        types = self.execute("select column_name, data_type from information_schema.columns where table_name = '{}'".format(table_name);
+        self.execute("select column_name, data_type from information_schema.columns where table_name = '{}'".format(table_name)
+        return dict(self.__cursor.fetchall())
+
 
