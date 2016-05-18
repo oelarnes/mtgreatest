@@ -1,4 +1,6 @@
 import MySQLdb
+import re
+
 from db_params import params  
 from datetime import datetime
 
@@ -7,12 +9,13 @@ def connect():
 
 def serialize(el, _type):
     if type(el) is unicode:
+        el = el.replace(u'\xa0', u' ')
         el = el.encode('utf-8')
     if _type.startswith('int'):
-        return re.match('^[0-9]*', el).group()
+        el = re.match('^[0-9]*', el).group()
     if type(el) is str:
         return "'{}'".format(el.replace("'", "\\'"))
-    if el == None:
+    if el == None or el == '':
         return 'NULL'
     if type(el) is datetime:
         return "'{}'".format(el.isoformat()[:10])
@@ -43,14 +46,15 @@ class Cursor:
         self.__db = connect()
         self.__cursor = self.__db.cursor()
     
-    def insert(self, table_name, data_table):
+    def insert(self, table_name, data_table, verbose=True):
         types = self.get_types(table_name)
         statement = insert_statement(table_name, data_table, types)
-        self.execute(statement)
+        self.execute(statement, verbose=verbose)
         return self
 
-    def execute(self, statement):
-        print 'executing statement: {}'.format(statement)
+    def execute(self, statement, verbose=False):
+        if verbose:
+            print 'executing statement: {}'.format(statement)
         self.__cursor.execute(statement)
         return self.__cursor.fetchall()
 
@@ -60,8 +64,7 @@ class Cursor:
         self.__cursor.close()
         self.__db.close()
 
-    def get_types(self, data_table):
-        self.execute("select column_name, data_type from information_schema.columns where table_name = '{}'".format(table_name)
-        return dict(self.__cursor.fetchall())
+    def get_types(self, table_name):
+        return dict(self.execute("select column_name, data_type from information_schema.columns where table_name = '{}'".format(table_name)))
 
 
