@@ -11,9 +11,9 @@ def serialize(el, _type):
     if type(el) is unicode:
         el = el.replace(u'\xa0', u' ')
         el = el.encode('utf-8')
-    if _type.startswith('int'):
+    if type(el) is str and _type.startswith('int'):
         el = re.match('^[0-9]*', el).group()
-    if type(el) is str:
+    if type(el) is str and _type.startswith('varchar'):
         return "'{}'".format(el.replace("'", "\\'"))
     if el == None or el == '':
         return 'NULL'
