@@ -38,7 +38,7 @@ def process_standings_link(link, event_id):
 def final_standings_info(soup, event_id):
     final_standings = [el for el in soup.find_all('a') if 'FINAL STANDINGS' in el.text or 'Final Standings' in el.text]
     if len(final_standings) == 0:
-      final_standings = [el for el in soup.find_all('a') if 'FINAL' in el.text or 'Final' in el.text]
+      final_standings = [el for el in soup.find_all('a') if ('FINAL' in el.text or 'Final' in el.text) and 'standings' in el.href]
     assert len(final_standings) == 1
     return [clean_magic_link(final_standings[0]['href']), event_id]
 
@@ -46,6 +46,8 @@ def upload_standings(standings_table, event_id):
     print
     print '==========Processing Standings Page for Event{}============'.format(event_id)
     cursor = Cursor()
+    print 'Deleting existing rows'
+    cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
     print 'Writing {} rows'.format(len(standings_table))
     cursor.insert(RAW_TABLE_NAME, standings_table)
     cursor.close()
