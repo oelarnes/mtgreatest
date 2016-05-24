@@ -11,6 +11,7 @@ def serialize(el, _type):
     if type(el) is unicode:
         el = el.replace(u'\xa0', u' ')
         el = el.encode('utf-8')
+    #todo: this type casting was a bad decision, should have happened in parse_row or after raw upload.
     if type(el) is str and _type.startswith('int'):
         el = re.match('^[0-9]*', el).group()
     if type(el) is str and _type.startswith('varchar'):
