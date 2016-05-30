@@ -83,7 +83,7 @@ table_definitions = {
         'results_raw_table' : [ 'event_id', 'round_num', 'table_id', 'p1_name_raw', 'p1_country', 'vs', 'p2_name_raw', 'p2_country', 'result_raw', 'elim', 'bo5' ]
 }
 
-
+def create_table_statement(table_name):
 
 
 

@@ -1,7 +1,7 @@
 import requests
 
 from bs4 import BeautifulSoup
-from mtgreatest.rdb import Cursor
+from mtgreatest-py.rdb import Cursor
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 

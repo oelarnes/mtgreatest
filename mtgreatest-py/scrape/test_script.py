@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import scrape_results
-from mtgreatest.rdb import Cursor
+from mtgreatest-py.rdb import Cursor
 
 cursor = Cursor()
 
