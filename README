@@ -1,0 +1,15 @@
+mtgreatest is a project to deliver advanced analytics and analytics-based content centered on 
+professional magic events and the performance of the players in those tournaments. The core
+data driving this project will be a database of players with their event results and an Elo
+rating for each event. Content based on this data will include a continuously-updated ranking
+of current top players, all-time top lists, and projections for upcoming tournaments.
+
+Project packages:
+mtgreatest-py - python scripts for the scraping of data, population of tables, and statistical 
+  analysis of event results
+mtgreatest-server - nodejs server delivering content and comminication with MySQL database
+mtgreatest-client - user-facing web application
+
+inspiration for this project is drawn from fiverthirtyeight and quick_mtgstat 
+
+
