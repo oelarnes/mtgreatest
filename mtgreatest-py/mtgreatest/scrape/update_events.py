@@ -1,7 +1,7 @@
 import requests
 
 from bs4 import BeautifulSoup
-from mtgreatest-py.rdb import Cursor
+from mtgreatest.rdb import Cursor
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
@@ -9,7 +9,7 @@ MAGIC_URL = 'http://magic.wizards.com'
 EVENTS_URL = MAGIC_URL + '/en/events/coverage'
 EVENT_TABLE_COLUMNS = ['event_id', 'event_full_name', 'day_1_date', 'day_1_rounds', 'day_2_date', 'day_2_rounds', 'day_3_date', 'day_3_rounds', 'num_players',  
     'fmt_desc', 'fmt_type', 'fmt_primary', 'fmt_secondary', 'fmt_third', 'fmt_fourth', 'season', 'champion', 'event_type', 'host_country', 'team_event', 'event_link', 
-    'results_loaded']
+    'process_status']
 
 def clean_magic_link(url):
     if url.startswith(('http://','https://')):
@@ -52,7 +52,7 @@ def update_event(event_info):
     query = "select * from event_table where event_link = '{}'".format(event_info['event_link'])
     result = cursor.execute(query)
     if len(result) == 0:
-        event_info['results_loaded'] = 0
+        event_info['process_status'] = 0
         cursor.insert('event_table', [event_info])
     cursor.close()
     return

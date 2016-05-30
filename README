@@ -10,6 +10,6 @@ mtgreatest-py - python scripts for the scraping of data, population of tables, a
 mtgreatest-server - nodejs server delivering content and comminication with MySQL database
 mtgreatest-client - user-facing web application
 
-inspiration for this project is drawn from fiverthirtyeight and quick_mtgstat 
+inspiration for this project is drawn from fivethirtyeight and quick_mtgstat 
 
 

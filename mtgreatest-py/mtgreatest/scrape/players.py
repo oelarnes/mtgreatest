@@ -4,7 +4,7 @@ import re
 from bs4 import BeautifulSoup
 from distance import levenshtein
 
-from mtgreatest-py.rdb import Cursor, serialize
+from mtgreatest.rdb import Cursor, serialize
 
 NUM_NORM_NAMES = 4
 NORM_NAMES = ['norm_name_{}'.format(num) for num in range(NUM_NORM_NAMES)]

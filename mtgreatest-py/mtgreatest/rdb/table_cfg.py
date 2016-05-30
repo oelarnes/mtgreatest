@@ -1,3 +1,5 @@
+from mtgreatest.rdb import Cursor
+
 column_info = {
         #event specific
         #
@@ -83,7 +85,21 @@ table_definitions = {
         'results_raw_table' : [ 'event_id', 'round_num', 'table_id', 'p1_name_raw', 'p1_country', 'vs', 'p2_name_raw', 'p2_country', 'result_raw', 'elim', 'bo5' ]
 }
 
-def create_table_statement(table_name):
+def create_table_statement(table_name, columns):
+    statement = 'CREATE TABLE ' + table_name + ' ('
+    for column in columns:
+        statement += ' ' + column + ' ' + column_info[column] + ','
+    statement = statement.rstrip(',')
+    statement += ' );'
+    return statement
+
+def create_tables():
+    cursor = Cursor()
+    for table_name, column in table_definitions.iteritems():
+        cursor.execute(create_table_statement(table_name, column))
+    cursor.close()
+
+
 
 
 

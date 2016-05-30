@@ -1,18 +1,17 @@
 import requests
-import mtgreatest-py.utils as utils
+import mtgreatest.utils as utils
 
-from mtgreatest-py.rdb import Cursor
+from mtgreatest.rdb import Cursor
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country
-from scrape_standings import scrape_standings
 
 RAW_TABLE_NAME = 'results_raw_table'
 RAW_COL_NAMES = ['table_id', 'p1_name_raw', 'p1_country', 'result_raw', 'vs', 'p2_name_raw', 'p2_country', 'round_num', 'event_id', 'elim']
 
 def get_new_results(num_events):
     cursor = Cursor()
-    query = "select event_link, event_id from event_table where results_loaded=0 order by day_1_date desc limit {}".format(num_events)
+    query = "select event_link, event_id from event_table where process_status=0 order by day_1_date desc limit {}".format(num_events)
     event_infos = cursor.execute(query)
     cursor.close()
     for event_info in event_infos:
@@ -20,7 +19,7 @@ def get_new_results(num_events):
 
 def mark_event(event_link, event_id, result):
     cursor = Cursor()
-    query = "UPDATE event_table set results_loaded={} where event_id='{}' and event_link='{}'".format(result, event_id, event_link)
+    query = "UPDATE event_table set process_status={} where event_id='{}' and event_link='{}'".format(result, event_id, event_link)
     cursor.execute(query)
     cursor.close()
     return
@@ -123,8 +122,6 @@ def process_event_link(event_link, event_id):
                 print 'XXXXXX{} Round {} Failed XXXXXXX'.format(round_[1], round_[2])
                 failed_links.append(round_[0])
         elim_results(soup, event_id, max([info[2] for info in rounds_info]))
-        print ''
-        scrape_standings(soup, event_id)
         if len(failed_links) > 0:
             print 'Event {} Incomplete :('.format(rounds_info[0][1])
             return -1

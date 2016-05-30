@@ -1,7 +1,7 @@
 import requests
-import mtgreatest-py.utils
+import mtgreatest.utils
 
-from mtgreatest-py.rdb import Cursor
+from mtgreatest.rdb import Cursor
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country
@@ -61,3 +61,16 @@ def scrape_standings(soup, event_id):
     print 'process'
     process_standings_link(info[0], info[1])
 
+def get_new_standings(num_events):
+    cursor = Cursor()
+    query = "select event_link, event_id from event_table where process_status=1 order by day_1_date desc limit {}".format(num_events)
+    event_infos = cursor.execute(query)
+    cursor.close()
+    for event_info in event_infos:
+        mark_event(*event_info, result=process_event_link(*event_info))
+
+def mark_event(event_link, event_id, result):
+    cursor = Cursor()
+    query = "UPDATE event_table set process_status={} where event_id='{}' and event_link='{}'".format(result, event_id, event_link)
+    cursor.execute(query)
+    cursor.close()

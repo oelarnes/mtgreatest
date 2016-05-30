@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import scrape_results
-from mtgreatest-py.rdb import Cursor
+from mtgreatest.rdb import Cursor
 
 cursor = Cursor()
 
-event_info = cursor.execute('select event_id, event_link from event_table where results_loaded = 1')
+event_info = cursor.execute('select event_id, event_link from event_table where process_status = 1')
 event_info = [dict(zip(('event_id','event_link'), item)) for item in event_info] #this should be a method (or default return structure) in rdb
 
 failed = []
