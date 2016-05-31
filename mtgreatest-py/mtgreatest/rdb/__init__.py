@@ -1,7 +1,7 @@
 import MySQLdb
 import re
 
-from db_params import params  
+from mtgreatest.rdb.db_params import params  
 from datetime import datetime
 
 def connect():

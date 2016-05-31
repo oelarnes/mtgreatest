@@ -77,10 +77,10 @@ column_info = {
 
 table_definitions = {
         'event_table' : [ 'event_id', 'event_full_name', 'location', 'day_1_date', 'day_1_rounds', 'day_2_date', 'day_2_rounds', 'day_3_date', 'day_3_rounds',
-            'day_4_date', 'day_4_rounds', 'num_players', 'ftm_desc', 'fmt_type', 'fmt_primary', 'fmt_secondary', 'fmt_third', 'fmt_fourth', 'season', 'champion_id',
+            'day_4_date', 'day_4_rounds', 'num_players', 'fmt_desc', 'fmt_type', 'fmt_primary', 'fmt_secondary', 'fmt_third', 'fmt_fourth', 'season', 'champion_id',
             'event_type', 'host_country', 'event_link', 'team_event', 'process_status' ],
         'player_table' : [ 'player_id', 'country', 'country_2', 'norm_name_1', 'norm_name_2', 'norm_name_3', 'norm_name_4', 'display_name' ],
-        'event_player_table' : [ 'event_id', 'player_id', 'norm_name', 'norm_name_alt', 'finish', 'match_point', 'pro_points', 'cash_prize' ],
+        'event_player_table' : [ 'event_id', 'player_id', 'norm_name', 'norm_name_alt', 'finish', 'match_points', 'pro_points', 'cash_prize' ],
         'standings_raw_table' : [ 'event_id', 'player_name_raw', 'finish', 'match_points', 'pro_points', 'cash_prize', 'country' ],
         'results_raw_table' : [ 'event_id', 'round_num', 'table_id', 'p1_name_raw', 'p1_country', 'vs', 'p2_name_raw', 'p2_country', 'result_raw', 'elim', 'bo5' ]
 }
@@ -98,7 +98,6 @@ def create_tables():
     for table_name, column in table_definitions.iteritems():
         cursor.execute(create_table_statement(table_name, column))
     cursor.close()
-
 
 
 
