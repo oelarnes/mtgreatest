@@ -2,12 +2,12 @@ import requests
 import mtgreatest.utils
 
 from mtgreatest.rdb import Cursor
+from mtgreatest.rdb.table_cfg import table_definitions
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country
 
 RAW_TABLE_NAME = 'standings_raw_table'
-RAW_COL_NAMES = ['finish', 'player_name_raw', 'player_country', 'match_points', 'pro_points', 'cash_prize', 'event_id']
 
 def parse_standings_row(soup, event_id):
     values = [item.get_text() for item in soup.find_all('td')]
@@ -18,7 +18,7 @@ def parse_standings_row(soup, event_id):
     if 'Match Points' in values[3]:
         return None
     values.append(event_id)
-    results = dict(zip(RAW_COL_NAMES, values))
+    results = dict(zip(table_definitions[RAW_TABLE_NAME], values))
     name_and_country = fix_name_and_country(results['player_name_raw'], results['player_country'])
     results['player_name_raw'] = name_and_country[0]
     results['player_country'] = name_and_country[1]
@@ -67,10 +67,9 @@ def get_new_standings(num_events):
     event_infos = cursor.execute(query)
     cursor.close()
     for event_info in event_infos:
-        mark_event(*event_info, result=process_event_link(*event_info))
+        mark_event(*event_info, result=scrape_standings_for_event_link(*event_info))
 
 def mark_event(event_link, event_id, result):
     cursor = Cursor()
     query = "UPDATE event_table set process_status={} where event_id='{}' and event_link='{}'".format(result, event_id, event_link)
-    cursor.execute(query)
     cursor.close()
