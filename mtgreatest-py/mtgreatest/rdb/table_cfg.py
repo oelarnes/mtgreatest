@@ -82,7 +82,7 @@ table_definitions = {
         'player_table' : [ 'player_id', 'country', 'country_2', 'norm_name_1', 'norm_name_2', 'norm_name_3', 'norm_name_4', 'display_name' ],
         'event_player_table' : [ 'event_id', 'player_id', 'norm_name', 'norm_name_alt', 'finish', 'match_points', 'pro_points', 'cash_prize' ],
         'standings_raw_table' : [ 'event_id', 'player_name_raw', 'finish', 'match_points', 'pro_points', 'cash_prize', 'country' ],
-        'results_raw_table' : [ 'event_id', 'round_num', 'table_id', 'p1_name_raw', 'p1_country', 'vs', 'p2_name_raw', 'p2_country', 'result_raw', 'elim', 'bo5' ]
+        'results_raw_table' : [ 'event_id', 'round_num', 'table_id', 'p1_name_raw', 'p1_country', 'result_raw', 'vs', 'p2_name_raw', 'p2_country', 'elim', 'bo5' ]
 }
 
 def create_table_statement(table_name, columns):

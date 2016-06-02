@@ -5,9 +5,9 @@ from mtgreatest.rdb import Cursor
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country
+from mtgreatest.rdb.table_cfg import table_definitions
 
 RAW_TABLE_NAME = 'results_raw_table'
-RAW_COL_NAMES = ['table_id', 'p1_name_raw', 'p1_country', 'result_raw', 'vs', 'p2_name_raw', 'p2_country', 'round_num', 'event_id', 'elim']
 
 def get_new_results(num_events):
     cursor = Cursor()
@@ -96,7 +96,7 @@ def all_rounds_info(soup, event_id):
 def event_soup(event_link):
     r = requests.get(event_link)
     if r.status_code is 200:
-        soup = BeautifulSoup(r.text)
+        soup = BeautifulSoup(r.text, 'html5lib')
         return soup
     else:
         r.raise_for_status()
@@ -134,7 +134,7 @@ def process_event_link(event_link, event_id):
         return -1
 
 def parse_row(soup, round_num, event_id):
-    # we assume rows are either of the format RAW_COL_NAMES or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
+    # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
     values = [item.get_text() for item in soup.find_all('td')]
     if len(values) == 4:
         values.insert(3, 'vs');
@@ -145,10 +145,11 @@ def parse_row(soup, round_num, event_id):
         return None
     if 'Table' in values[0]:
         return None
-    values.append(round_num)
-    values.append(event_id)
+    values.insert(0, round_num)
+    values.insert(0, event_id)
     values.append(0)
-    results = dict(zip(RAW_COL_NAMES, values))
+    values.append(0)
+    results = dict(zip(table_definitions[RAW_TABLE_NAME], values))
     name_and_country_1 = fix_name_and_country(results['p1_name_raw'], results['p1_country'])
     name_and_country_2 = fix_name_and_country(results['p2_name_raw'], results['p2_country'])
     results['p1_name_raw'] = name_and_country_1[0]
