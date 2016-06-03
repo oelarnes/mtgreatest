@@ -103,14 +103,14 @@ def event_soup(event_link):
         return
 
 def process_event_link(event_link, event_id):
-    soup = event_soup(event_link)
-    print 'Deleting existing rows for event {}'.format(event_id)
-    cursor = Cursor()
-    cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
-    cursor.close()
     
     failed_links = []
     try:
+        soup = event_soup(event_link)
+        print 'Deleting existing rows for event {}'.format(event_id)
+        cursor = Cursor()
+        cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
+        cursor.close()
         rounds_info = all_rounds_info(soup, event_id)
         print 'Round info parsed for event {}'.format(rounds_info[0][1])
         for round_ in rounds_info:
