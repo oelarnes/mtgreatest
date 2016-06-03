@@ -61,6 +61,15 @@ def scrape_standings(soup, event_id):
     print 'process'
     process_standings_link(info[0], info[1])
 
+def scrape_standings_for_event_link(event_link, event_id):
+    try:
+        process_standings_link(event_link, event_id)
+        return {'value': 2, 'error': None}
+    except Exception as error:
+        print error
+        print "scrape standings for event {} failed".format(event_id)
+        return {'value': -2, 'error': error}
+
 def get_new_standings(num_events):
     cursor = Cursor()
     query = "select event_link, event_id from event_table where process_status=1 order by day_1_date desc limit {}".format(num_events)
@@ -71,5 +80,5 @@ def get_new_standings(num_events):
 
 def mark_event(event_link, event_id, result):
     cursor = Cursor()
-    query = "UPDATE event_table set process_status={} where event_id='{}' and event_link='{}'".format(result, event_id, event_link)
+    query = "UPDATE event_table set process_status={}, last_error={}  where event_id='{}' and event_link='{}'".format(result.value, result.error, event_id, event_link)
     cursor.close()

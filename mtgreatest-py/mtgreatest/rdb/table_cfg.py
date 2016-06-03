@@ -30,6 +30,7 @@ column_info = {
         'team_event'        : 'int'             ,
         'event_link'        : 'varchar(320)'    ,
         'process_status'    : 'int'             ,
+        'last_error'        : 'varchar(1600)'   ,
 
         #player specific
         #
@@ -78,7 +79,7 @@ column_info = {
 table_definitions = {
         'event_table' : [ 'event_id', 'event_full_name', 'location', 'day_1_date', 'day_1_rounds', 'day_2_date', 'day_2_rounds', 'day_3_date', 'day_3_rounds',
             'day_4_date', 'day_4_rounds', 'num_players', 'fmt_desc', 'fmt_type', 'fmt_primary', 'fmt_secondary', 'fmt_third', 'fmt_fourth', 'season', 'champion_id',
-            'event_type', 'host_country', 'event_link', 'team_event', 'process_status' ],
+            'event_type', 'host_country', 'event_link', 'team_event', 'process_status', 'last_error' ],
         'player_table' : [ 'player_id', 'country', 'country_2', 'norm_name_1', 'norm_name_2', 'norm_name_3', 'norm_name_4', 'display_name' ],
         'event_player_table' : [ 'event_id', 'player_id', 'norm_name', 'norm_name_alt', 'finish', 'match_points', 'pro_points', 'cash_prize' ],
         'standings_raw_table' : [ 'event_id', 'player_name_raw', 'finish', 'match_points', 'pro_points', 'cash_prize', 'country' ],
