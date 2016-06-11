@@ -53,7 +53,7 @@ class Cursor:
         self.execute(statement, verbose=verbose)
         return self
 
-    def execute(self, statement, verbose=False):
+    def execute(self, statement, verbose=True):
         if verbose:
             print 'executing statement: {}'.format(statement)
         self.__cursor.execute(statement)
