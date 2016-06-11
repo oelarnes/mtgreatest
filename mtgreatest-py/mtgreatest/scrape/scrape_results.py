@@ -124,14 +124,14 @@ def process_event_link(event_link, event_id):
         elim_results(soup, event_id, max([info[2] for info in rounds_info]))
         if len(failed_links) > 0:
             print 'Event {} Incomplete :('.format(rounds_info[0][1])
-            return {'value': -1, 'error': error}
+            return {'value': -1, 'error': unicode(error)}
         else:
             print 'Event {} Successfully Processed!'.format(rounds_info[0][1]) 
             return {'value': 1, 'error': None}
     except Exception as error:
         print error
         print 'Event Link {} Failed :('.format(event_link)
-        return {'value': -1, 'error': error}
+        return {'value': -1, 'error': unicode(error)}
 
 def parse_row(soup, round_num, event_id):
     # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
