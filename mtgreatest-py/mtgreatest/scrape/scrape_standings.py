@@ -9,7 +9,7 @@ from players import fix_name_and_country
 
 RAW_TABLE_NAME = 'standings_raw_table'
 
-def parse_standings_row(soup, event_id):
+def arse_standings_row(soup, event_id):
     values = [item.get_text() for item in soup.find_all('td')]
     if len(values) == 5:
         values.insert(2, None)

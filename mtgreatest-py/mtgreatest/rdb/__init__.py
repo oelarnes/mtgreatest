@@ -7,14 +7,11 @@ from datetime import datetime
 def connect():
     return MySQLdb.connect(user=params['user'],passwd=params['passwd'],db=params['db'])
 
-def serialize(el, _type):
+def serialize(el):
     if type(el) is unicode:
         el = el.replace(u'\xa0', u' ')
         el = el.encode('utf-8')
-    #todo: this type casting was a bad decision, should have happened in parse_row or after raw upload.
-    if type(el) is str and _type.startswith('int'):
-        el = re.match('^[0-9]*', el).group()
-    if type(el) is str and _type.startswith('varchar'):
+    if type(el) is str:
         return "'{}'".format(el.replace("'", "\\'"))
     if el == None or el == '':
         return 'NULL'
@@ -25,7 +22,7 @@ def serialize(el, _type):
 def names_from_data_table(data_table):
     return list(set().union(*[row.keys() for row in data_table]))
 
-def insert_statement(table_name, data_table, types):
+def insert_statement(table_name, data_table):
     statement = 'INSERT INTO {} '.format(table_name)
     if not len(data_table):
         statement += '() VALUES ()'
@@ -36,7 +33,7 @@ def insert_statement(table_name, data_table, types):
 
     values = []
     for row in data_table:
-        content = str.join(',', [serialize(row.get(name, None), types[name]) for name in names])
+        content = str.join(',', [serialize(row.get(name, None)) for name in names])
         values.append('({})'.format(content))
 
     statement += str.join(',', values)
@@ -48,8 +45,7 @@ class Cursor:
         self.__cursor = self.__db.cursor()
     
     def insert(self, table_name, data_table, verbose=True):
-        types = self.get_types(table_name)
-        statement = insert_statement(table_name, data_table, types)
+        statement = insert_statement(table_name, data_table)
         self.execute(statement, verbose=verbose)
         return self
 
