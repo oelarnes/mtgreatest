@@ -1,7 +1,7 @@
 import requests
 import mtgreatest.utils as utils
 
-from mtgreatest.rdb import Cursor
+from mtgreatest.rdb import Cursor, serialize
 from bs4 import BeautifulSoup
 from update_events import clean_magic_link
 from players import fix_name_and_country
@@ -19,7 +19,8 @@ def get_new_results(num_events):
 
 def mark_event(event_link, event_id, result):
     cursor = Cursor()
-    query = "UPDATE event_table set process_status={}, last_error={}  where event_id='{}' and event_link='{}'".format(result['value'], result['error'], event_id, event_link)
+    entries = [serialize(entry) for entry in [result['value'], result['error'], event_id, event_link]]
+    query = "UPDATE event_table set process_status={}, last_error={} where event_id={} and event_link={}".format(*entries)
     cursor.execute(query)
     cursor.close()
     return
@@ -123,14 +124,14 @@ def process_event_link(event_link, event_id):
         elim_results(soup, event_id, max([info[2] for info in rounds_info]))
         if len(failed_links) > 0:
             print 'Event {} Incomplete :('.format(rounds_info[0][1])
-            return {'value': -1, 'error': "'{}'".format(error) }
+            return {'value': -1, 'error': error}
         else:
             print 'Event {} Successfully Processed!'.format(rounds_info[0][1]) 
-            return {'value': 1, 'error': 'NULL'}
+            return {'value': 1, 'error': None}
     except Exception as error:
         print error
         print 'Event Link {} Failed :('.format(event_link)
-        return {'value': -1, 'error': "'{}'".format(error)}
+        return {'value': -1, 'error': error}
 
 def parse_row(soup, round_num, event_id):
     # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
