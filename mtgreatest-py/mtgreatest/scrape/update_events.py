@@ -60,7 +60,7 @@ def update_event(event_info):
 def update_events():
     r = requests.get(EVENTS_URL)
     if r.status_code == 200:
-        soup = BeautifulSoup(r.text)
+        soup = BeautifulSoup(r.text, 'html5lib')
         sections = soup.find_all('div', class_='bean_block')
         print 'found {} sections'.format(len(sections))
         for section in sections:
@@ -89,6 +89,8 @@ def update_events():
                             update_event(d)
                             d = {'event_type' : d['event_type'], 'season' : season}
                     elif child.name == 'a':
+                        if len(child.text) is 0:
+                            continue
                         d['event_link'] = clean_magic_link(child['href'])
                         d['event_id'] = event_id_from_link(d['event_link'])
                         if d['event_type'] == 'Championship':

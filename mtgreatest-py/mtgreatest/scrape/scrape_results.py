@@ -1,3 +1,4 @@
+import pdb
 import requests
 import mtgreatest.utils as utils
 
@@ -97,7 +98,7 @@ def all_rounds_info(soup, event_id):
 def event_soup(event_link):
     r = requests.get(event_link)
     if r.status_code is 200:
-        soup = BeautifulSoup(r.text, 'html5lib')
+        soup = BeautifulSoup(r.text, 'html.parser')
         return soup
     else:
         r.raise_for_status()
@@ -145,6 +146,8 @@ def parse_row(soup, round_num, event_id):
         return None
     if 'Table' in values[0]:
         return None
+    values[0] = values[0].rstrip().lstrip()
+    values[0] = None if values[0] == '' else int(values[0])
     values.insert(0, round_num)
     values.insert(0, event_id)
     values.append(0)
@@ -161,7 +164,7 @@ def parse_row(soup, round_num, event_id):
 def process_results_link(link, event_id, round_num):
     r = requests.get(link)
     if r.status_code is 200:
-        soup = BeautifulSoup(r.text)
+        soup = BeautifulSoup(r.text, 'html.parser')
     else:
         r.raise_for_status()
         return
