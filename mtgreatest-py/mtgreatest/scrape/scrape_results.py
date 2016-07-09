@@ -94,8 +94,8 @@ def elim_results(soup, event_id, max_round_num):
 def all_rounds_info(soup, event_id):
     results = [el for el in soup.find_all('p') if 'RESULTS' in el.text or 'Results' in el.text]
     assert len(results) == 1
-    round_ = int(re.find('[0-9]+', el.text).group())
-    return [(clean_magic_link(el['href']), event_id, round_) for el in results[0].parent.find_all('a')]
+    #please forgive me
+    return [(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) for el in results[0].parent.find_all('a')]
 
 def event_soup(event_link):
     r = requests.get(event_link)
@@ -148,8 +148,8 @@ def parse_row(soup, round_num, event_id):
         return None
     if 'Table' in values[0]:
         return None
-    values[0] = re.search('[0-9]+', values[0]).group()
-    values[0] = None if values[0] == '' else int(values[0])
+    values[0] = re.search('[0-9]+', values[0])
+    values[0] = values[0] and int(values[0].group())
     values.insert(0, round_num)
     values.insert(0, event_id)
     values.append(0)
