@@ -1,6 +1,7 @@
 import pdb
 import requests
 import mtgreatest.utils as utils
+import re
 
 from mtgreatest.rdb import Cursor, serialize
 from bs4 import BeautifulSoup
@@ -93,12 +94,13 @@ def elim_results(soup, event_id, max_round_num):
 def all_rounds_info(soup, event_id):
     results = [el for el in soup.find_all('p') if 'RESULTS' in el.text or 'Results' in el.text]
     assert len(results) == 1
-    return [(clean_magic_link(el['href']), event_id, int(el.text)) for el in results[0].parent.find_all('a')]
+    round_ = int(re.find('[0-9]+', el.text).group())
+    return [(clean_magic_link(el['href']), event_id, round_) for el in results[0].parent.find_all('a')]
 
 def event_soup(event_link):
     r = requests.get(event_link)
     if r.status_code is 200:
-        soup = BeautifulSoup(r.text, 'html.parser')
+        soup = BeautifulSoup(r.text, 'lxml')
         return soup
     else:
         r.raise_for_status()
@@ -146,7 +148,7 @@ def parse_row(soup, round_num, event_id):
         return None
     if 'Table' in values[0]:
         return None
-    values[0] = values[0].rstrip().lstrip()
+    values[0] = re.search('[0-9]+', values[0]).group()
     values[0] = None if values[0] == '' else int(values[0])
     values.insert(0, round_num)
     values.insert(0, event_id)
@@ -164,7 +166,7 @@ def parse_row(soup, round_num, event_id):
 def process_results_link(link, event_id, round_num):
     r = requests.get(link)
     if r.status_code is 200:
-        soup = BeautifulSoup(r.text, 'html.parser')
+        soup = BeautifulSoup(r.text, 'lxml')
     else:
         r.raise_for_status()
         return

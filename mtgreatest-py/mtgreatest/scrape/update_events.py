@@ -60,7 +60,7 @@ def update_event(event_info):
 def update_events():
     r = requests.get(EVENTS_URL)
     if r.status_code == 200:
-        soup = BeautifulSoup(r.text, 'html5lib')
+        soup = BeautifulSoup(r.text, 'lxml')
         sections = soup.find_all('div', class_='bean_block')
         print 'found {} sections'.format(len(sections))
         for section in sections:
