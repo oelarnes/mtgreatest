@@ -1,7 +1,7 @@
 import requests
 
 from bs4 import BeautifulSoup
-from mtgreatest.rdb import Cursor
+from mtgreatest.rdb import Cursor, serialize
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
@@ -55,7 +55,16 @@ def update_event(event_info):
         event_info['process_status'] = 0
         cursor.insert('event_table', [event_info])
     elif len(result) == 1:
-        #results should be tables of dicts
+        #results should be tables of dicts but for now we can just update with results
+        cols = event_info.keys()
+        vals = [serialize(val) for val in event_info.values()]
+        query = "update event_table set "
+        for i in range(len(cols)):
+            if i > 0:
+                query += ", "
+            query += "{} = {}".format(cols[i], vals[i])
+        query += " where event_link = {}".format(serialize(event_info['event_link']))
+        cursor.execute(query)
     cursor.close()
     return
 
