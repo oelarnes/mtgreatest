@@ -45,9 +45,10 @@ def info_text_to_date(text):
 def info_text_to_fmt_desc(text):
     return text.partition(')')[2].lstrip(u'-\u2014\u2013 ')
 
-def update_event(event_info):
+def update_event(event_info, all_info):
     if 'event_link' not in event_info:
         return None
+    all_info.append(event_info)
     cursor = Cursor()
     query = "select * from event_table where event_link = '{}'".format(event_info['event_link'])
     result = cursor.execute(query)
@@ -68,7 +69,24 @@ def update_event(event_info):
     cursor.close()
     return
 
+def clean_up_links(all_info):
+    cursor = Cursor()
+    table_info = cursor.execute('select event_link, event_id from event_table')
+    all_links = [info["event_link"] for info in all_info]
+    all_ids = [info['event_id'] for info in all_info]
+    unused_info = [info for info in table_info if info[0] not in all_links]
+    if len(unused_info) > 0:
+        print unused_info
+        proceed = raw_input('{} events found, event_table has {} obsolete links. Delete data for obsolete links?\n'.format(len(all_info), len(unused_info)))
+        if proceed == 'y' or proceed == 'Y':
+            for info in unused_info:
+                if info[1] not in all_ids:
+                    cursor.execute("delete from results_raw_table where event_id = '{}'".format(info[1]))
+                cursor.execute("delete from event_table where event_link = '{}'".format(info[0]))
+        cursor.close()
+
 def update_events():
+    all_info = []
     r = requests.get(EVENTS_URL)
     if r.status_code == 200:
         soup = BeautifulSoup(r.text, 'lxml')
@@ -106,7 +124,7 @@ def update_events():
                                 d['fmt_desc'] += child.text
                         elif child.name == 'br':
                             if 'event_link' in d:
-                                update_event(d)
+                                update_event(d, all_info)
                                 d = {'event_type' : d['event_type'], 'season' : season}
                         elif child.name == 'a':
                             if len(child.text) is 0:
@@ -128,8 +146,9 @@ def update_events():
                             elif 'fmt_desc' in d:
                                 d['fmt_desc'] += child
                 if 'event_link' in d:
-                    update_event(d)
+                    update_event(d, all_info)
                     d = {'event_type' : d['event_type'], 'season' : season}
+        clean_up_links(all_info) 
     else:
         r.raise_for_status()
     return

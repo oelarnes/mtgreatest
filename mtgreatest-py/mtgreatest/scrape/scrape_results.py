@@ -93,9 +93,12 @@ def elim_results(soup, event_id, max_round_num):
 
 def all_rounds_info(soup, event_id):
     results = [el for el in soup.find_all('p') if 'RESULTS' in el.text or 'Results' in el.text]
-    assert len(results) == 1
     #please forgive me
-    return [(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) for el in results[0].parent.find_all('a')]
+    round_infos = []
+    for result in results:
+        round_infos.extend([(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) \
+            for el in result.parent.find_all('a')])
+    return round_infos
 
 def event_soup(event_link):
     r = requests.get(event_link)
