@@ -45,7 +45,7 @@ def parse_elim_name(name_and_result):
         return [split[0], '']
     if len(split) == 2:
         #could be either last, first or first last, result
-        result_chars = ['012- ']
+        result_chars = '012- '
         if min([char in result_chars for char in split[1]]):
             return [split[0], split[1]]
         else:
@@ -96,10 +96,10 @@ def elim_results(soup, event_id, max_round_num):
             winners.insert(0, {'name': p2_name_raw, 'result': p2_part[1]})
         else:
             strong = pair.find('strong')
-            srong = strong.text.strip().lstrip('()12345678 ')
+            strong = strong.text.strip().lstrip('()12345678 ')
             result_raw = ''
             if strong == p1 or len(p1_part[1]) > 0 and len(p2_part[1]) == 0:
-                result_raw = 'Won ' + p1_part[2]
+                result_raw = 'Won ' + p1_part[1]
             if strong == p2 or len(p2_part[1]) > 0 and len(p2_part[1]) == 0:
                 if len(result_raw) > 0:
                     raise Exception(ELIM_ERR_MSG)
