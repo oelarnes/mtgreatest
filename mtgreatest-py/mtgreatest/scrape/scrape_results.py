@@ -39,39 +39,83 @@ def upload_round_results(results_table, event_id, round_num):
     print 'New {} row count: {}'.format(RAW_TABLE_NAME, cursor.execute('select count(1) from {}'.format(RAW_TABLE_NAME))[0][0])
     cursor.close(commit=False)
 
+def parse_elim_name(name_and_result):
+    split = name_and_result.split(', ')
+    if len(split) == 1:
+        return [split[0], '']
+    if len(split) == 2:
+        #could be either last, first or first last, result
+        result_chars = ['012- ']
+        if min([char in result_chars for char in split[1]]):
+            return [split[0], split[1]]
+        else:
+            return [name_and_result, '']
+    if len(split) == 3:
+        return [', '.join(split[:2]), split[2]]
+    else:
+        raise 'too many commas in elimination text' 
+
+
 def elim_results(soup, event_id, max_round_num):
     ELIM_ERR_MSG = 'Could not interpret elimation round results for event {}'.format(event_id)
     bracket_pairs = soup.find('div', class_='top-bracket-slider').find_all('div', class_='dual-players')
-    bracket_pairs = [pair for pair in bracket_pairs if len(pair.find_all('div', class_='player')) == 2]
+    use_winners = False
+    winners = []
+    if len(bracket_pairs) in [4, 8]:
+        #sometimes the winner is listed on the next level of the bracket, sometimes on the same level.
+        #this is for when its on the next level
+        use_winners = True
+        player = bracket_pairs.pop().find_all('div', class_='player')
+        assert len(player) is 1
+        p = player[0].text.strip().lstrip('()123456789 ')
+        p_part = parse_elim_name(p)
+        p_name_raw = utils.standardize_name(p_part[0])
+        winners.append({'name': utils.standardize_name(p_part[0]), 'result': p_part[1]})
+    bracket_pairs.reverse()
     results_table = []
     print '{} matches found in elimination rounds'.format(len(bracket_pairs))
     for idx, pair in enumerate(bracket_pairs):
         players = list(pair.find_all('div', class_='player'))
-        p1 = players[0].text.strip().lstrip('()12345678 ')
-        p2 = players[1].text.strip().lstrip('()12345678 ')
-        p1_part = p1.partition(',')
-        p2_part = p2.partition(',')
-        strong = pair.find('strong').text.strip().lstrip('()12345678 ')
-        result_raw = ''
-        if strong == p1 or len(p1_part[2]) > 0 and len(p2_part[2]) == 0:
-            result_raw = 'Won ' + p1_part[2]
-        if strong == p2 or len(p2_part[2]) > 0 and len(p2_part[2]) == 0:
-            if len(result_raw) > 0:
-                raise Exception(ELIM_ERR_MSG)
-            result_raw = 'Lost ' + utils.str_reverse(p2_part[2])
-        if len(result_raw)==0:
-            raise Exception(ELIM_ERR_MSG)
+        p1 = players[0].text.strip().lstrip('()123456789 ')
+        p2 = players[1].text.strip().lstrip('()123456789 ')
+        p1_part = parse_elim_name(p1)
+        p2_part = parse_elim_name(p2)
         p1_name_raw = utils.standardize_name(p1_part[0])
         p2_name_raw = utils.standardize_name(p2_part[0])
+
+        if use_winners:
+            if p1_name_raw in [row['name'] for row in winners]:
+                ind = [row['name'] for row in winners].index(p1_name_raw)
+                result_raw = 'Won ' + [row['result'] for row in winners][ind]
+            elif p2_name_raw in [row['name'] for row in winners]:
+                ind = [row['name'] for row in winners].index(p2_name_raw)
+                result_raw = 'Lost ' + [row['result'] for row in winners][ind]
+            else:
+                raise Exception(ELIM_ERR_MSG)
+            winners.insert(0, {'name': p1_name_raw, 'result': p1_part[1]})
+            winners.insert(0, {'name': p2_name_raw, 'result': p2_part[1]})
+        else:
+            strong = pair.find('strong')
+            srong = strong.text.strip().lstrip('()12345678 ')
+            result_raw = ''
+            if strong == p1 or len(p1_part[1]) > 0 and len(p2_part[1]) == 0:
+                result_raw = 'Won ' + p1_part[2]
+            if strong == p2 or len(p2_part[1]) > 0 and len(p2_part[1]) == 0:
+                if len(result_raw) > 0:
+                    raise Exception(ELIM_ERR_MSG)
+                result_raw = 'Lost ' + utils.str_reverse(p2_part[1])
+            if len(result_raw)==0:
+                raise Exception(ELIM_ERR_MSG)
+
         if len(bracket_pairs) == 7:
-            if idx < 4:
+            if idx > 2:
                 round_num = max_round_num + 1
-            elif idx < 6:
+            elif idx > 0:
                 round_num = max_round_num + 2
             else:
                 round_num = max_round_num + 3
         elif len(bracket_pairs) == 3:
-            if idx < 2:
+            if idx > 0:
                 round_num = max_round_num + 1
             else:
                 round_num = max_round_num + 2
@@ -143,7 +187,7 @@ def parse_row(soup, round_num, event_id):
     # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
     values = [item.get_text() for item in soup.find_all('td')]
     if len(values) == 4:
-        values.insert(3, 'vs');
+        values.insert(3, 'vs')
     if len(values) == 5:
         values.insert(2, None)
         values.insert(6, None)
