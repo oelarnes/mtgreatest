@@ -40,24 +40,14 @@ def upload_round_results(results_table, event_id, round_num):
     cursor.close(commit=False)
 
 def parse_elim_name(name_and_result):
-    split = name_and_result.split(', ')
-    if len(split) == 1:
-        return [split[0], '']
-    if len(split) == 2:
-        #could be either last, first or first last, result
-        result_chars = '012- '
-        if min([char in result_chars for char in split[1]]):
-            return [split[0], split[1]]
-        else:
-            return [name_and_result, '']
-    if len(split) == 3:
-        return [', '.join(split[:2]), split[2]]
-    else:
-        raise 'too many commas in elimination text' 
-
+    result_split = name_and_result.rpartition(' ')
+    result_chars = '0123- ()'
+    if '-' in result_split[2] and min([char in result_chars for char in result_split[2]]):
+        return [result_split[0].rstrip(', '), result_split[2]]
+    return [name_and_result, '']
 
 def elim_results(soup, event_id, max_round_num):
-    ELIM_ERR_MSG = 'Could not interpret elimation round results for event {}'.format(event_id)
+    ELIM_ERR_MSG = 'Could not interpret elimination round results for event {}'.format(event_id)
     bracket_pairs = soup.find('div', class_='top-bracket-slider').find_all('div', class_='dual-players')
     use_winners = False
     winners = []
@@ -67,7 +57,7 @@ def elim_results(soup, event_id, max_round_num):
         use_winners = True
         player = bracket_pairs.pop().find_all('div', class_='player')
         assert len(player) is 1
-        p = player[0].text.strip().lstrip('()123456789 ')
+        p = player[0].text.strip().lstrip('.()123456789 ')
         p_part = parse_elim_name(p)
         p_name_raw = utils.standardize_name(p_part[0])
         winners.append({'name': utils.standardize_name(p_part[0]), 'result': p_part[1]})
@@ -76,8 +66,8 @@ def elim_results(soup, event_id, max_round_num):
     print '{} matches found in elimination rounds'.format(len(bracket_pairs))
     for idx, pair in enumerate(bracket_pairs):
         players = list(pair.find_all('div', class_='player'))
-        p1 = players[0].text.strip().lstrip('()123456789 ')
-        p2 = players[1].text.strip().lstrip('()123456789 ')
+        p1 = players[0].text.strip().lstrip('.()123456789 ')
+        p2 = players[1].text.strip().lstrip('.()123456789 ')
         p1_part = parse_elim_name(p1)
         p2_part = parse_elim_name(p2)
         p1_name_raw = utils.standardize_name(p1_part[0])
