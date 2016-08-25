@@ -8,22 +8,30 @@ def validate(text, page_type):
     return true
 
 def write_as(text, filename):
-    f = open(filename, 'w')
+    f = open(filename, 'a')
     f.write(text)
     f.close()
 
-def scrape_results(soup, event_id):
-    if 'results' not in os.listdir():
-        os.mkdir('results')
-    os.chdir('results')
+def scrape_info_type(info_type, soup, event_id):
+    if info_type not in os.listdir():
+        os.mkdir(info_type)
+    os.chdir(info_type)
 
+    for f in os.listdir():
+        os.remove(f)
 
-    results = [el for el in soup.find_all('p') if 'RESULTS' in el.text or 'Results' in el.text]
-    #please forgive me
+    results = [el for el in soup.find_all('p') if info_type.upper() in el.text or info_type.capitalize() in el.text]
     for result in results:
-        round_num_match = re.search('[0-9]+', el.text)
-        if round_num_match:
-          ########  
+        for el in result.parent.find_all('a'):
+            r = requests.get(clean_magic_link(el['href'])
+            if r.status_code is not 200:
+                r.raise_for_status()
+            #undo this decision tomorrow!
+            write_as(r.text, el.text)
+
+
+
+
         round_infos.extend([(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) \
             for el in result.parent.find_all('a')])
     os.chdir('..')
