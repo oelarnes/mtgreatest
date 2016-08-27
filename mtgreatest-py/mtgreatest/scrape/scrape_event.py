@@ -2,13 +2,12 @@ import requests
 import os
 from bs4 import BeautifulSoup
 
+from mtgreatest.rdb import Cursor, serialize
+from update_events import clean_magic_link
 os.chdir('../../../html')
 
-def validate(text, page_type):
-    return true
-
 def write_as(text, filename):
-    f = open(filename, 'a')
+    f = open(filename, 'w')
     f.write(text)
     f.close()
 
@@ -16,6 +15,8 @@ def scrape_info_type(info_type, soup, event_id):
     if info_type not in os.listdir():
         os.mkdir(info_type)
     os.chdir(info_type)
+    alts = ['-a', '-b', '-c']
+    round_inds = dict()
 
     for f in os.listdir():
         os.remove(f)
@@ -26,16 +27,15 @@ def scrape_info_type(info_type, soup, event_id):
             r = requests.get(clean_magic_link(el['href'])
             if r.status_code is not 200:
                 r.raise_for_status()
-            #undo this decision tomorrow!
-            write_as(r.text, el.text)
+            if el.text in round_inds:
+                text = el.text + alts[round_inds[el.text]]
+                round_inds[el.text] += 1
+            else:
+                text = el.text
+                round_inds[text] = 0
 
-
-
-
-        round_infos.extend([(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) \
-            for el in result.parent.find_all('a')])
+    assert len(os.listdir()) > 11, 'fewer than 12 rounds detected for type {}'.format(info_type)
     os.chdir('..')
-    
 
 def scrape_link(event_link, event_id):
     r = requests.get(event_link)
@@ -48,21 +48,26 @@ def scrape_link(event_link, event_id):
             os.mkdir(event_id)
         os.chdir(event_id)
 
-        if not validate(r.text, 'main'):
-            r.raise_for_status('invalid main event page for event_id {}'.format(event_id))
-
         write_as(r.text, 'index.html')
         soup = BeautifulSoup(r.text, 'lxml')
 
-        scrape_results(soup, event_id)
-        scrape_standings(soup, event_id)
-        scrape_pairings(soup, event_id)
+        scrape_info_type('results', soup, event_id)
+        scrape_info_type('pairings', soup, event_id)
+        scrape_info_type('standings', soup, event_id)
     except Exception as error:
-        return (False, error)
+        return {'value': -1, 'error': error}
 
-    return 
+    return {'value': 1, 'error': None}
 
-def get_new_results(num_events):
+def mark_event(event_link, event_id, result):
+    cursor = Cursor()
+    entries = [serialize(entry) for entry in [result['value'], result['error'], event_id, event_link]]
+    query = "UPDATE event_table set process_status={}, last_error={} where event_id={} and event_link={}".format(*entries)
+    cursor.execute(query)
+    cursor.close()
+    return
+
+def scrape_new_links(num_events):
     cursor = Cursor()
     query = "select event_link, event_id from event_table where process_status=0 order by day_1_date desc limit {}".format(num_events)
     event_infos = cursor.execute(query)
