@@ -1,7 +1,7 @@
 import pdb
-import requests
 import mtgreatest.utils as utils
 import re
+import io
 
 from mtgreatest.rdb import Cursor, serialize
 from bs4 import BeautifulSoup
@@ -9,6 +9,7 @@ from update_events import clean_magic_link
 from players import fix_name_and_country
 from mtgreatest.rdb.table_cfg import table_definitions
 
+HTML_DIR = '/home/ec2-user/mtgreatest/html'
 RAW_TABLE_NAME = 'results_raw_table'
 
 def get_new_results(num_events):
@@ -134,19 +135,17 @@ def all_rounds_info(soup, event_id):
             for el in result.parent.find_all('a')])
     return round_infos
 
-def event_soup(event_link):
-    r = requests.get(event_link)
-    if r.status_code is 200:
-        soup = BeautifulSoup(r.text, 'lxml')
-        return soup
-    else:
-        r.raise_for_status()
-        return
+def event_soup(event_id):
+    f = io.open(HTML_DIR + '/' + event_id + '/index.html', 'r', encoding='utf-8')
+    text = f.readlines()
+    text = '\n'.join(text)
+    soup = BeautifulSoup(text, 'lxml')
+    return soup
 
 def process_event_link(event_link, event_id):
     failed_links = []
     try:
-        soup = event_soup(event_link)
+        soup = event_soup(event_id)
         print 'Deleting existing rows for event {}'.format(event_id)
         cursor = Cursor()
         cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
