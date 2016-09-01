@@ -1,11 +1,9 @@
-import pdb
 import mtgreatest.utils as utils
 import re
 import io
 
 from mtgreatest.rdb import Cursor, serialize
 from bs4 import BeautifulSoup
-from update_events import clean_magic_link
 from players import fix_name_and_country
 from mtgreatest.rdb.table_cfg import table_definitions
 
@@ -14,16 +12,16 @@ RAW_TABLE_NAME = 'results_raw_table'
 
 def get_new_results(num_events):
     cursor = Cursor()
-    query = "select event_link, event_id from event_table where process_status=0 order by day_1_date desc limit {}".format(num_events)
-    event_infos = cursor.execute(query)
+    query = "select event_id from event_table where process_status=1 order by day_1_date desc limit {}".format(num_events)
+    event_ids = cursor.execute(query)
     cursor.close()
-    for event_info in event_infos:
-        mark_event(*event_info, result=process_event_link(*event_info))
+    for event_id in event_ids:
+        mark_event(event_id[0], result=process_event(event_id[0]))
 
-def mark_event(event_link, event_id, result):
+def mark_event(event_id, result):
     cursor = Cursor()
-    entries = [serialize(entry) for entry in [result['value'], result['error'], event_id, event_link]]
-    query = "UPDATE event_table set process_status={}, last_error={} where event_id={} and event_link={}".format(*entries)
+    entries = [serialize(entry) for entry in [result['value'], result['error'], event_id]]
+    query = "UPDATE event_table set process_status={}, last_error={} where event_id={}".format(*entries)
     cursor.execute(query)
     cursor.close()
     return
@@ -47,7 +45,7 @@ def parse_elim_name(name_and_result):
         return [result_split[0].rstrip(', '), result_split[2]]
     return [name_and_result, '']
 
-def elim_results(soup, event_id, max_round_num):
+def elim_results(event_id, max_round_num):
     ELIM_ERR_MSG = 'Could not interpret elimination round results for event {}'.format(event_id)
     bracket_pairs = soup.find('div', class_='top-bracket-slider').find_all('div', class_='dual-players')
     use_winners = False
@@ -126,51 +124,39 @@ def elim_results(soup, event_id, max_round_num):
 
     upload_round_results(results_table, event_id, max_round_num + 1)
 
-def all_rounds_info(soup, event_id):
-    results = [el for el in soup.find_all('p') if 'RESULTS' in el.text or 'Results' in el.text]
-    #please forgive me
-    round_infos = []
-    for result in results:
-        round_infos.extend([(clean_magic_link(el['href']), event_id, re.search('[0-9]+', el.text) and int(re.search('[0-9]+', el.text).group())) \
-            for el in result.parent.find_all('a')])
-    return round_infos
-
 def event_soup(event_id):
     f = io.open(HTML_DIR + '/' + event_id + '/index.html', 'r', encoding='utf-8')
-    text = f.readlines()
-    text = '\n'.join(text)
-    soup = BeautifulSoup(text, 'lxml')
-    return soup
+    return BeautifulSoup(f.read(), 'lxml')
 
-def process_event_link(event_link, event_id):
-    failed_links = []
+def process_event(event_id):
+    failed_rounds = []
     try:
-        soup = event_soup(event_id)
         print 'Deleting existing rows for event {}'.format(event_id)
+    
         cursor = Cursor()
         cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
         cursor.close()
-        rounds_info = all_rounds_info(soup, event_id)
+
         print 'Round info parsed for event {}'.format(rounds_info[0][1])
-        for round_ in rounds_info:
+        for results_file in os.listdir(event_id):
             try:
-                process_results_link(*round_)
+                process_results_file(*round_)
                 print '>>>>>>{} Round {} Successfully Processed<<<<<<'.format(round_[1], round_[2])
             except Exception as error:
                 print error
                 print 'XXXXXX{} Round {} Failed XXXXXXX'.format(round_[1], round_[2])
-                failed_links.append(round_[0])
-        elim_results(soup, event_id, max([info[2] for info in rounds_info]))
-        if len(failed_links) > 0:
+                failed_rounds.append(round_[0])
+        elim_results(event_id, max([info[2] for info in rounds_info]))
+        if len(failed_rounds) > 0:
             print 'Event {} Incomplete :('.format(rounds_info[0][1])
-            return {'value': -1, 'error': unicode(error)}
+            return {'value': -2, 'error': unicode(error)}
         else:
             print 'Event {} Successfully Processed!'.format(rounds_info[0][1]) 
-            return {'value': 1, 'error': None}
+            return {'value': 2, 'error': None}
     except Exception as error:
         print error
-        print 'Event Link {} Failed :('.format(event_link)
-        return {'value': -1, 'error': unicode(error)}
+        print 'Event {} Failed :('.format(event_id)
+        return {'value': -2, 'error': unicode(error)}
 
 def parse_row(soup, round_num, event_id):
     # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
@@ -199,13 +185,8 @@ def parse_row(soup, round_num, event_id):
     results['p2_country'] = name_and_country_2[1]
     return results
 
-def process_results_link(link, event_id, round_num):
-    r = requests.get(link)
-    if r.status_code is 200:
-        soup = BeautifulSoup(r.text, 'lxml')
-    else:
-        r.raise_for_status()
-        return
+def process_results_file(results_file_name, event_id):
+    soup = BeautifulSoup(io.open('{}/{}'.format(event_id, results_file_name), 'r', encoding='utf-8').read(), 'lxml')
     results_table = [parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None]
     assert len(results_table) > 0, 'no results for event {}, round {}'.format(event_id, round_num)
     upload_round_results(results_table, event_id, round_num)
