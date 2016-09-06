@@ -26,7 +26,7 @@ def scrape_info_type(info_type, soup, event_id):
         for el in result.parent.find_all('a'):
             r = requests.get(clean_magic_link(el['href']))
             if r.status_code is not 200:
-                r.raise_for_status()
+                continue
             if el.text in round_inds:
                 filename = el.text + alts[round_inds[el.text]]
                 round_inds[el.text] += 1

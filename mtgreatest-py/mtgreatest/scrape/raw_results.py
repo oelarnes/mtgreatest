@@ -125,9 +125,11 @@ def elim_results(event_id, max_round_num):
     upload_round_results(results_table, event_id, max_round_num + 1)
 
 def event_soup(event_id):
-    f = io.open(HTML_DIR + '/' + event_id + '/index.html', 'r', encoding='utf-8')
+    f = io.open('/'.join([HTML_DIR, event_id, 'index.html']), 'r', encoding='utf-8')
     return BeautifulSoup(f.read(), 'lxml')
 
+def validate_and_return_max_rounds(event_id):
+    #check results exist for every round and return highest value
 def process_event(event_id):
     failed_rounds = []
     try:
@@ -137,15 +139,16 @@ def process_event(event_id):
         cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
         cursor.close()
 
-        print 'Round info parsed for event {}'.format(rounds_info[0][1])
-        for results_file in os.listdir(event_id):
+        print 'Round info parsed for event {}'.format(event_id)
+        for results_file in os.listdir('/'.join([HTML_DIR, event_id])):
             try:
-                process_results_file(*round_)
-                print '>>>>>>{} Round {} Successfully Processed<<<<<<'.format(round_[1], round_[2])
+                process_results_file(results_file, event_id)
+                print '>>>>>>{} Round {} Successfully Processed<<<<<<'.format(event_id, results_file)
             except Exception as error:
                 print error
                 print 'XXXXXX{} Round {} Failed XXXXXXX'.format(round_[1], round_[2])
                 failed_rounds.append(round_[0])
+        max_rounds = validate_and_return_max_rounds(event_id)
         elim_results(event_id, max([info[2] for info in rounds_info]))
         if len(failed_rounds) > 0:
             print 'Event {} Incomplete :('.format(rounds_info[0][1])
@@ -186,7 +189,8 @@ def parse_row(soup, round_num, event_id):
     return results
 
 def process_results_file(results_file_name, event_id):
-    soup = BeautifulSoup(io.open('{}/{}'.format(event_id, results_file_name), 'r', encoding='utf-8').read(), 'lxml')
+    soup = BeautifulSoup(io.open('/'.join([HTML_DIR, event_id, results_file_name]), 'r', encoding='utf-8').read(), 'lxml')
+    round_num = int(results_file_name.partition('-')[0])
     results_table = [parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None]
     assert len(results_table) > 0, 'no results for event {}, round {}'.format(event_id, round_num)
     upload_round_results(results_table, event_id, round_num)
