@@ -1,6 +1,5 @@
 import mtgreatest.utils as utils
-import re
-import io
+import re, io, os
 
 from mtgreatest.rdb import Cursor, serialize
 from bs4 import BeautifulSoup
@@ -130,6 +129,13 @@ def event_soup(event_id):
 
 def validate_and_return_max_rounds(event_id):
     #check results exist for every round and return highest value
+    cursor = Cursor()
+    round_nums = cursor.execute("select distinct round_num from results_raw_table where event_id={}".format(serialize(event_id)))
+    cursor.close()
+    all_nums = set([item for sublist in round_nums for item in sublist])
+    assert len(all_nums) is max(all_nums)
+    return max(all_nums)
+
 def process_event(event_id):
     failed_rounds = []
     try:
@@ -140,21 +146,23 @@ def process_event(event_id):
         cursor.close()
 
         print 'Round info parsed for event {}'.format(event_id)
-        for results_file in os.listdir('/'.join([HTML_DIR, event_id])):
+        results_dir = '/'.join([HTML_DIR, event_id, 'results'])
+        for results_file in os.listdir(results_dir):
+            round_num = int(results_file.partition('.')[0].partition('-')[0])
             try:
-                process_results_file(results_file, event_id)
+                process_results_file('/'.join([results_dir, results_file]), round_num, event_id)
                 print '>>>>>>{} Round {} Successfully Processed<<<<<<'.format(event_id, results_file)
             except Exception as error:
                 print error
-                print 'XXXXXX{} Round {} Failed XXXXXXX'.format(round_[1], round_[2])
-                failed_rounds.append(round_[0])
+                print 'XXXXXX{} Round {} Failed XXXXXXX'.format(event_id, round_num)
+                failed_rounds.append(round_num)
         max_rounds = validate_and_return_max_rounds(event_id)
-        elim_results(event_id, max([info[2] for info in rounds_info]))
+        elim_results(event_id, max_rounds)
         if len(failed_rounds) > 0:
-            print 'Event {} Incomplete :('.format(rounds_info[0][1])
+            print 'Event {} Incomplete :('.format(event_id)
             return {'value': -2, 'error': unicode(error)}
         else:
-            print 'Event {} Successfully Processed!'.format(rounds_info[0][1]) 
+            print 'Event {} Successfully Processed!'.format(event_id) 
             return {'value': 2, 'error': None}
     except Exception as error:
         print error
@@ -188,9 +196,8 @@ def parse_row(soup, round_num, event_id):
     results['p2_country'] = name_and_country_2[1]
     return results
 
-def process_results_file(results_file_name, event_id):
-    soup = BeautifulSoup(io.open('/'.join([HTML_DIR, event_id, results_file_name]), 'r', encoding='utf-8').read(), 'lxml')
-    round_num = int(results_file_name.partition('-')[0])
+def process_results_file(results_file_name, round_num, event_id):
+    soup = BeautifulSoup(io.open(results_file_name, 'r', encoding='utf-8').read(), 'lxml')
     results_table = [parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None]
     assert len(results_table) > 0, 'no results for event {}, round {}'.format(event_id, round_num)
     upload_round_results(results_table, event_id, round_num)
