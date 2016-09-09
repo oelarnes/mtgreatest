@@ -46,6 +46,7 @@ def parse_elim_name(name_and_result):
 
 def elim_results(event_id, max_round_num):
     ELIM_ERR_MSG = 'Could not interpret elimination round results for event {}'.format(event_id)
+    soup = event_soup(event_id)
     bracket_pairs = soup.find('div', class_='top-bracket-slider').find_all('div', class_='dual-players')
     use_winners = False
     winners = []
@@ -133,7 +134,7 @@ def validate_and_return_max_rounds(event_id):
     round_nums = cursor.execute("select distinct round_num from results_raw_table where event_id={}".format(serialize(event_id)))
     cursor.close()
     all_nums = set([item for sublist in round_nums for item in sublist])
-    assert len(all_nums) is max(all_nums)
+    assert len(all_nums) == max(all_nums), "Max round {}, but only {} rounds processed!".format(max(all_nums), len(all_nums))
     return max(all_nums)
 
 def process_event(event_id):
@@ -157,6 +158,7 @@ def process_event(event_id):
                 print 'XXXXXX{} Round {} Failed XXXXXXX'.format(event_id, round_num)
                 failed_rounds.append(round_num)
         max_rounds = validate_and_return_max_rounds(event_id)
+        print '{} rounds loaded, processesing elimination rounds'.format(max_rounds) 
         elim_results(event_id, max_rounds)
         if len(failed_rounds) > 0:
             print 'Event {} Incomplete :('.format(event_id)
