@@ -201,7 +201,7 @@ def raw_results_from_results(event_id, round_num):
     return results_table
 
 def raw_results_from_pairings_and_standings(event_id, round_num):
-    standings_texts = texts_for_round_and_type(event_id, round_num 'standings')
+    standings_texts = texts_for_round_and_type(event_id, round_num, 'standings')
     standings_table_all = [standings_from_text(text) for text in stanings_texts]
     standings_table = [row for sublist in results_table_all for row in sublist]
     
