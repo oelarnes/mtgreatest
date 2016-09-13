@@ -25,7 +25,7 @@ def mark_event(event_id, result):
     cursor.close()
     return
 
-def upload_round_results(results_table, event_id, round_num):
+def upload_round_results(event_id, round_num, results_table):
     # results_table must all have same round_num and represent all results for that round!!
     print
     print '==========Processing Results for Event {}, Round {}=========='.format(event_id, round_num)
@@ -131,47 +131,43 @@ def event_soup(event_id):
 def validate_and_return_max_rounds(event_id):
     #check results exist for every round and return highest value
     cursor = Cursor()
-    round_nums = cursor.execute("select distinct round_num from results_raw_table where event_id={}".format(serialize(event_id)))
+    round_nums = cursor.execute("select distinct round_num from {} where event_id={}".format(RAW_TABLE_NAME, serialize(event_id)))
     cursor.close()
     all_nums = set([item for sublist in round_nums for item in sublist])
     assert len(all_nums) == max(all_nums), "Max round {}, but only {} rounds processed!".format(max(all_nums), len(all_nums))
     return max(all_nums)
 
 def process_event(event_id):
-    failed_rounds = []
     try:
         print 'Deleting existing rows for event {}'.format(event_id)
     
         cursor = Cursor()
-        cursor.execute("delete from {} where event_id='{}'".format(RAW_TABLE_NAME, event_id))
+        cursor.execute("delete from {} where event_id={}".format(RAW_TABLE_NAME, serialize(event_id)))
         cursor.close()
 
-        print 'Round info parsed for event {}'.format(event_id)
         results_dir = '/'.join([HTML_DIR, event_id, 'results'])
-        for results_file in os.listdir(results_dir):
-            round_num = int(results_file.partition('.')[0].partition('-')[0])
-            try:
-                process_results_file('/'.join([results_dir, results_file]), round_num, event_id)
-                print '>>>>>>{} Round {} Successfully Processed<<<<<<'.format(event_id, results_file)
-            except Exception as error:
-                print error
-                print 'XXXXXX{} Round {} Failed XXXXXXX'.format(event_id, round_num)
-                failed_rounds.append(round_num)
+        standings_dir = '/'.join([HTML_DIR, event_id, 'standings'])
+        num_rounds = max([round_num_from_filename(filename) for filename in os.listdir(results_dir)].extend(
+            [round_num_from_filename(filename) for filename in os.listdir(standings_dir)]))
+        print 'Found {} rounds for event {}'.format(num_rounds, event_id)
+
+        for round_num in range(1, num_rounds + 1):
+            results_results = raw_results_from_results(event_id, round_num)
+            other_results = raw_results_from_pairings_and_standings(event_id, round_num)
+            results = merge_results_tables(results_results, other_results)
+            #standings = standings_from_round_results(event_id, round_num, results)
+            upload_round_results(event_id, round_num, results)
+            #upload_standings(event_id, round_num, standings)
+
         max_rounds = validate_and_return_max_rounds(event_id)
         print '{} rounds loaded, processesing elimination rounds'.format(max_rounds) 
         elim_results(event_id, max_rounds)
-        if len(failed_rounds) > 0:
-            print 'Event {} Incomplete :('.format(event_id)
-            return {'value': -2, 'error': unicode(error)}
-        else:
-            print 'Event {} Successfully Processed!'.format(event_id) 
-            return {'value': 2, 'error': None}
     except Exception as error:
         print error
         print 'Event {} Failed :('.format(event_id)
         return {'value': -2, 'error': unicode(error)}
 
-def parse_row(soup, round_num, event_id):
+def parse_results_row(soup, round_num, event_id):
     # we assume rows are either of the format table_definitions[RAW_TABLE_NAME] or 'table_id','p1_name_raw','results_raw',('vs',)'p2_name_raw'
     values = [item.get_text() for item in soup.find_all('td')]
     if len(values) == 4:
@@ -198,11 +194,38 @@ def parse_row(soup, round_num, event_id):
     results['p2_country'] = name_and_country_2[1]
     return results
 
-def process_results_file(results_file_name, round_num, event_id):
-    soup = BeautifulSoup(io.open(results_file_name, 'r', encoding='utf-8').read(), 'lxml')
+def raw_results_from_results(event_id, round_num):
+    results_texts = texts_for_round_and_type(event_id, round_num, 'results')
+    results_table_all = [results_from_text(text) for text in results_texts]
+    results_table = [row for sublist in results_table_all for row in sublist]
+    return results_table
+
+def raw_results_from_pairings_and_standings(event_id, round_num):
+    standings_texts = texts_for_round_and_type(event_id, round_num 'standings')
+    standings_table_all = [standings_from_text(text) for text in stanings_texts]
+    standings_table = [row for sublist in results_table_all for row in sublist]
+    
+    pairings = texts_for_round_and_type(event_id, round_num, 'pairings')
+    #todo: fix
+    results_table = []
+    return results_table
+
+# todo: Fix
+def merge_results_tables(results_1, results_2):
+    return results_1 if len(results_1) > len(results_2) else results_2
+    
+def process_results_text(results_text, round_num, event_id):
+    soup = BeautifulSoup(results_text, 'lxml')
     results_table = [parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None]
-    assert len(results_table) > 0, 'no results for event {}, round {}'.format(event_id, round_num)
-    upload_round_results(results_table, event_id, round_num)
+    return results_table
 
+def round_num_from_filename(filename):
+    nums = re.search('[0-9]+', filename)
+    return nums and int(nums.group())
 
+def texts_for_round_and_type(event_id, round_num, info_type):
+    type_dir = '/'.join([HTML_DIR, event_id, info_type])
+    all_files = os.listdir(type_dir)
+    names_for_round = [filename for filename in all_files if round_num_from_filename(filename) == round_num]
+    return [io.open('/'.join([type_dir, filename]), 'r', encoding='utf-8').read() for filename in names_for_round]
 
