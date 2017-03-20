@@ -117,7 +117,7 @@ def elim_results(event_id, max_round_num):
             'result_raw' : result_raw,
             'round_num' : round_num,
             'event_id' : event_id,
-            'elim' : 1,
+            'is_elim' : 1,
             'vs' : 'vs.'
         }
         results_table.append(row)
