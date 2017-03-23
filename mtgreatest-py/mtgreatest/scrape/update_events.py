@@ -2,14 +2,13 @@ import requests
 
 from bs4 import BeautifulSoup
 from mtgreatest.rdb import Cursor, serialize
+from mtgreatest.rdb.table_cfg import table_definitions
 from dateutil.parser import parse
 from datetime import datetime, timedelta
 
 MAGIC_URL = 'http://magic.wizards.com'
 EVENTS_URL = MAGIC_URL + '/en/events/coverage'
-EVENT_TABLE_COLUMNS = ['event_id', 'event_full_name', 'day_1_date', 'day_1_rounds', 'day_2_date', 'day_2_rounds', 'day_3_date', 'day_3_rounds', 'num_players',  
-    'fmt_desc', 'fmt_type', 'fmt_primary', 'fmt_secondary', 'fmt_third', 'fmt_fourth', 'season', 'champion', 'event_type', 'host_country', 'team_event', 'event_link', 
-    'process_status']
+EVENT_TABLE_COLUMNS = table_definitions['event_table']
 
 def clean_magic_link(url):
     if url.startswith(('http://','https://')):

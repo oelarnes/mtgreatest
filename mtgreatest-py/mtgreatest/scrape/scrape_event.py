@@ -41,7 +41,7 @@ def scrape_info_type(info_type, soup, event_id):
 
 def scrape_link(event_link, event_id):
     print 'scraping event {}'.format(event_id)
-    os.chdir('/home/ec2-user/mtgreatest/html')
+    os.chdir('~/Projects/mtg-html')
     r = requests.get(event_link)
      
     try:

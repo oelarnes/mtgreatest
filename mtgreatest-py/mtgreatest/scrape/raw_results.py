@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from players import fix_name_and_country
 from mtgreatest.rdb.table_cfg import table_definitions
 
-HTML_DIR = '/home/ec2-user/mtgreatest/html'
+HTML_DIR = '~/Projects/mtg-html'
 RAW_TABLE_NAME = 'results_raw_table'
 
 def get_new_results(num_events):
@@ -210,13 +210,14 @@ def raw_results_from_pairings_and_standings(event_id, round_num):
     results_table = []
     return results_table
 
-# todo: Fix
 def merge_results_tables(results_1, results_2):
     return results_1 if len(results_1) > len(results_2) else results_2
     
 def process_results_text(results_text, round_num, event_id):
     soup = BeautifulSoup(results_text, 'lxml')
-    results_table = [parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None]
+    results_table = [
+        parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None
+    ]
     return results_table
 
 def round_num_from_filename(filename):
