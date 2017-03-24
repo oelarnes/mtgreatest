@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from players import fix_name_and_country
 from mtgreatest.rdb.table_cfg import table_definitions
 
-HTML_DIR = '~/Projects/mtg-html'
+HTML_DIR = '/Users/joel/Projects/mtg-html'
 RAW_TABLE_NAME = 'results_raw_table'
 
 def get_new_results(num_events):
@@ -147,8 +147,15 @@ def process_event(event_id):
 
         results_dir = '/'.join([HTML_DIR, event_id, 'results'])
         standings_dir = '/'.join([HTML_DIR, event_id, 'standings'])
-        num_rounds = max([round_num_from_filename(filename) for filename in os.listdir(results_dir)].extend(
-            [round_num_from_filename(filename) for filename in os.listdir(standings_dir)]))
+        
+        round_nums = [
+            round_num_from_filename(filename) for filename in os.listdir(results_dir)
+        ]
+        round_nums.extend([
+            round_num_from_filename(filename) for filename in os.listdir(standings_dir)
+        ])
+        print round_nums
+        num_rounds = max(round_nums)
         print 'Found {} rounds for event {}'.format(num_rounds, event_id)
 
         for round_num in range(1, num_rounds + 1):
@@ -196,14 +203,14 @@ def parse_results_row(soup, round_num, event_id):
 
 def raw_results_from_results(event_id, round_num):
     results_texts = texts_for_round_and_type(event_id, round_num, 'results')
-    results_table_all = [results_from_text(text) for text in results_texts]
+    results_table_all = [process_results_text(text, round_num, event_id) for text in results_texts]
     results_table = [row for sublist in results_table_all for row in sublist]
     return results_table
 
 def raw_results_from_pairings_and_standings(event_id, round_num):
     standings_texts = texts_for_round_and_type(event_id, round_num, 'standings')
-    standings_table_all = [standings_from_text(text) for text in stanings_texts]
-    standings_table = [row for sublist in results_table_all for row in sublist]
+    #standings_table_all = []#standings_from_text(text) for text in standings_texts]
+    #standings_table = [row for sublist in results_table_all for row in sublist]
     
     pairings = texts_for_round_and_type(event_id, round_num, 'pairings')
     #todo: fix
@@ -216,7 +223,8 @@ def merge_results_tables(results_1, results_2):
 def process_results_text(results_text, round_num, event_id):
     soup = BeautifulSoup(results_text, 'lxml')
     results_table = [
-        parse_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') if parse_row(row, round_num, event_id) is not None
+        parse_results_row(row, round_num, event_id) for row in soup.find('table').find_all('tr') \
+            if parse_results_row(row, round_num, event_id) is not None
     ]
     return results_table
 
